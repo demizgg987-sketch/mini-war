@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>עולם המדינות</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="gl"></canvas>
+  <canvas id="ov"></canvas>
+  <div id="tooltip" class="hidden"></div>
+
+  <!-- ===== טעינה ===== -->
+  <div id="loading">
+    <div class="loader"></div>
+    <div>טוען את כדור הארץ...</div>
+  </div>
+
+  <!-- ===== לובי ===== -->
+  <div id="lobby" class="layer">
+    <div class="lobby-panel glass">
+      <div class="logo">
+        <div class="logo-icon">🌍</div>
+        <div>
+          <h1>עולם המדינות</h1>
+          <p>בנה מדינה על כדור הארץ. גייס צבא. כבוש את העולם.</p>
+        </div>
+      </div>
+
+      <!-- בחירת שרת -->
+      <div id="lobbyMain">
+        <div class="section-title">🌐 בחר שרת</div>
+        <div id="serverList" class="server-list"></div>
+        <div class="section-title">🔒 משחק עם חברים</div>
+        <div class="row">
+          <input id="privName" placeholder="שם לשרת פרטי חדש" maxlength="30">
+          <select id="privSpeed">
+            <option value="1">רגיל</option>
+            <option value="2">×2</option>
+            <option value="3">×3</option>
+          </select>
+          <button id="privCreate" class="btn gold">צור</button>
+        </div>
+        <div class="row">
+          <input id="joinCode" placeholder="קוד הצטרפות" maxlength="5" class="code-input">
+          <button id="joinBtn" class="btn">הצטרף</button>
+        </div>
+      </div>
+
+      <!-- יצירת מדינה -->
+      <div id="lobbyCreate" class="hidden">
+        <button class="btn ghost sm" id="createBack">→ חזרה לשרתים</button>
+        <div class="section-title" id="createTitle"></div>
+        <div class="steps">
+          <div class="step"><span class="num">1</span> שם למדינה</div>
+          <input id="newName" maxlength="20" placeholder="למשל: ממלכת האריות">
+          <div class="step"><span class="num">2</span> דגל: בחר מוכן או העלה תמונה</div>
+          <div class="flag-picker" id="newFlagPicker"></div>
+          <div class="step"><span class="num">3</span> לחץ על יבשה בכדור הארץ כדי לבחור איפה תקום המדינה</div>
+          <div id="placeStatus" class="place-status">📍 עוד לא נבחר מקום</div>
+          <button class="btn gold big" id="foundBtn">🏗️ הקם את המדינה</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ממשק המשחק ===== -->
+  <div id="hud" class="layer hidden">
+    <div class="topbar glass">
+      <div class="me" id="meBtn" title="המדינה שלי [H]">
+        <img id="myFlag" class="flag" alt="">
+        <b id="myName"></b>
+      </div>
+      <div class="res">
+        <div class="stat" title="כסף"><span class="ico">💰</span><b id="rMoney"></b><small id="rNet"></small></div>
+        <div class="stat" title="תושבים / מקום"><span class="ico">👥</span><b id="rPop"></b></div>
+        <div class="stat" title="שטח"><span class="ico">🗺️</span><b id="rLand"></b></div>
+        <div class="stat" title="בניינים / מקסימום"><span class="ico">🏗️</span><b id="rBuild"></b></div>
+        <div class="stat" title="כוח הגנה"><span class="ico">🛡️</span><b id="rDef"></b></div>
+        <div class="stat" title="כוח התקפה"><span class="ico">⚔️</span><b id="rAtk"></b></div>
+        <div class="stat shield hidden" id="rShield" title="מגן פעיל"><span class="ico">🔰</span><b data-until id="rShieldT"></b></div>
+      </div>
+    </div>
+
+    <div class="server-pill glass">
+      <span id="srvName"></span>
+      <span class="online"><i></i><b id="srvOnline"></b></span>
+      <button class="btn ghost sm" id="exitBtn">יציאה</button>
+    </div>
+
+    <!-- צד ימין: דירוג -->
+    <div class="board glass" id="board">
+      <div class="panel-head">🏆 דירוג מדינות <kbd>Tab</kbd></div>
+      <div id="boardList"></div>
+    </div>
+
+    <!-- צד שמאל: התראות וחדשות -->
+    <div class="feed-wrap">
+      <div id="alerts"></div>
+      <div class="feed glass">
+        <div class="mini-tabs">
+          <button class="active" data-feed="news">📰 חדשות</button>
+          <button data-feed="log">📜 היומן שלי</button>
+        </div>
+        <div id="feedList"></div>
+      </div>
+    </div>
+
+    <!-- צ'אט -->
+    <div class="chat glass" id="chat">
+      <div class="chat-msgs" id="chatBox"></div>
+      <div class="chat-to hidden" id="chatTo"></div>
+      <form id="chatForm">
+        <input id="chatInput" maxlength="300" placeholder="לחץ Enter כדי לכתוב..." autocomplete="off">
+      </form>
+    </div>
+
+    <!-- כרטיס מדינה -->
+    <div class="country-card glass hidden" id="card"></div>
+
+    <!-- שורת מקשים -->
+    <div class="hotbar">
+      <button data-key="shop"><kbd>E</kbd><span>🛒 חנות</span></button>
+      <button data-key="upgrades"><kbd>F</kbd><span>⬆️ שדרוגים</span></button>
+      <button data-key="home"><kbd>H</kbd><span>🏠 הבית</span></button>
+      <button data-key="board"><kbd>Tab</kbd><span>🏆 דירוג</span></button>
+      <button data-key="chat"><kbd>Enter</kbd><span>💬 צ'אט</span></button>
+    </div>
+
+    <div class="zoom-ctrl">
+      <button id="zoomIn">+</button>
+      <button id="zoomOut">−</button>
+    </div>
+  </div>
+
+  <!-- ===== חנות [E] ===== -->
+  <div class="modal hidden" id="shop">
+    <div class="big-panel glass">
+      <div class="big-head">
+        <div><h2>🛒 חנות</h2><div class="muted">קנה צבא, תושבים ובניינים · <kbd>E</kbd> לסגירה</div></div>
+        <div class="money-badge">💰 <b data-money></b></div>
+      </div>
+      <div id="shopBody"></div>
+    </div>
+  </div>
+
+  <!-- ===== שדרוגים [F] ===== -->
+  <div class="modal hidden" id="upgrades">
+    <div class="big-panel glass">
+      <div class="big-head">
+        <div><h2>⬆️ שדרוגים</h2><div class="muted">שדרג את המדינה שלך · <kbd>F</kbd> לסגירה</div></div>
+        <div class="money-badge">💰 <b data-money></b></div>
+      </div>
+      <div id="upBody" class="up-grid"></div>
+    </div>
+  </div>
+
+  <!-- ===== התקפה ===== -->
+  <div class="modal hidden" id="attack">
+    <div class="mid-panel glass" id="attackBody"></div>
+  </div>
+
+  <!-- ===== החלפת דגל ===== -->
+  <div class="modal hidden" id="flagModal">
+    <div class="mid-panel glass">
+      <h2>🏳️ החלפת דגל</h2>
+      <div class="flag-picker" id="editFlagPicker"></div>
+      <div class="row end">
+        <button class="btn ghost" data-close>ביטול</button>
+        <button class="btn gold" id="saveFlag">שמור דגל</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== תוצאת קרב ===== -->
+  <div class="modal hidden" id="battle">
+    <div class="mid-panel glass battle" id="battleBody"></div>
+  </div>
+
+  <div id="toasts"></div>
+
+  <script src="globe.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

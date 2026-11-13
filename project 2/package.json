@@ -1,0 +1,12 @@
+{
+  "name": "world-of-nations",
+  "version": "1.0.0",
+  "description": "עולם המדינות - משחק אסטרטגיה אונליין",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
